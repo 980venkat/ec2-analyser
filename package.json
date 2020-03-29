@@ -6,7 +6,16 @@
     "@testing-library/jest-dom": "^4.2.4",
     "@testing-library/react": "^9.5.0",
     "@testing-library/user-event": "^7.2.1",
+    "amazon-cognito-identity-js": "^3.2.6",
+    "aws-amplify": "^2.2.7",
+    "aws-amplify-react": "^3.1.8",
+    "aws-sdk": "^2.648.0",
+    "bootstrap": "^4.4.1",
+    "jsonwebtoken": "^8.5.1",
+    "node-fetch": "^2.6.0",
     "react": "^16.13.1",
+    "react-bootstrap": "^1.0.0",
+    "react-bootstrap-table": "^4.0.0",
     "react-dom": "^16.13.1",
     "react-scripts": "3.4.1"
   },
@@ -14,7 +23,8 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "deploy": "aws s3 sync build/ s3://ec2-manager-yv1 --acl public-read --profile jnpr"
   },
   "eslintConfig": {
     "extends": "react-app"

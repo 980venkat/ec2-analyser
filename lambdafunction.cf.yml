@@ -1,0 +1,92 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: AWS CloudFormation template to create lambda function which will create tags to ec2 machine with inventory data .
+
+Resources:
+  InventoryLambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+         LogGroupName: !Sub '/aws/lambda/mc-ec2-inventory-lambda'
+         RetentionInDays: 7
+  InventoryLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ec2-inventory-report-lambda-role
+      Path: "/svc/"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Sid: AllowSSMAssumeRole
+          Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: sts:AssumeRole
+      Policies:
+      - PolicyName: inventory-ec2-report-policy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Sid: '0'
+            Action:
+            - dynamodb:*
+            Effect: Allow
+            Resource: "*"
+          - Sid: '1'
+            Action:
+            - cloudwatch:DescribeAlarms
+            - cloudwatch:PutMetricData
+            Effect: Allow
+            Resource: "*"
+          - Sid: '2'
+            Action:
+            - ec2:DescribeInstances
+            Effect: Allow
+            Resource: "*"
+
+          - Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Resource: arn:aws:logs:*:*:*
+            Effect: Allow
+            Sid: '4'
+  InventoryLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: ec2-inventory-load-lambda
+      Code:
+        ZipFile: |
+          def lambda_handler(event,context):
+              regions = ec2.describe_regions()
+              for j in regions:
+                  ec2client = boto3.client('ec2',region_name=j)
+                  response = ec2client.describe_instances()
+                  for reservation in response["Reservations"]:
+                      for instance in reservation["Instances"]:
+                          if instance['State']['Name'] == 'running':
+                              print(instance["InstanceId"])
+
+      Description: Lambda function to creat tags by checking inventory data
+      Handler: index.lambda_handler
+      MemorySize: '512'
+      Role: !GetAtt InventoryLambdaRole.Arn
+      Runtime: python3.7
+      Timeout: 900
+
+  InventoryEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: InventoryReportScheduler
+      Description: trigger this rule to add inventory data to ec2 tags
+      ScheduleExpression: cron(15 12 * * ? *)
+      State: ENABLED
+      Targets:
+      - Arn: !GetAtt InventoryLambda.Arn
+        Id: InventoryLambda
+  InvokeLambdaPermissionDown:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt InventoryLambda.Arn
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt InventoryEventRule.Arn
