@@ -25,10 +25,36 @@ class Auth extends Component {
 // </Authenticator>
 
 
+const MyTheme = {
+  button: { backgroundColor: "green", borderColor: "red" },
+  };
+
+const signUpFields = [
+    {
+      label: 'Tech Mahindra Email',
+      key: 'email',
+      required: true,
+      displayOrder: 1,
+      type: 'string'
+    },
+    {
+      label: 'Set Password',
+      key: 'password',
+      required: true,
+      displayOrder: 2,
+      type: 'password'
+    },
+  ];
+
+
+
 
 export default withAuthenticator(Auth, {
   usernameAttributes: 'email',
   signUpConfig: {
-    hiddenDefaults: ['phone_number']
+    header: ' Sign Up With TechM email ID',
+    hiddenDefaults: ['phone_number'],
+    signUpFields: signUpFields,
+    theme: MyTheme
   }
 });
